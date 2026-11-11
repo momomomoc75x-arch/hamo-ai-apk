@@ -32,7 +32,7 @@ footer{text-align:center;color:#6f91aa;font-size:11px;margin:16px}
 <div class="grid">
 <main class="card">
 <div id="chat" class="chat"><div class="msg bot">أهلاً! أنا حمو 🤖<br>دي النسخة الأولى التجريبية. أقدر أفهم أوامر بسيطة بدون إنترنت، وأحفظ ملاحظاتك داخل ملف ذاكرة قابل للنقل.<br><br>جرّب: «ساعدني» أو «افتح واتساب» أو «احفظ ملاحظة ...»</div></div>
-<div class="row"><input id="prompt" placeholder="اكتب أمرك لحمو هنا..." autocomplete="off"><button id="send">إرسال</button></div>
+<div class="row"><input id="prompt" placeholder="اكتب أمرك لحمو هنا..." autocomplete="off"><button id="mic" class="secondary" title="تحدث مع حمو">🎤</button><button id="send">إرسال</button></div>
 <div class="muted" style="margin-top:8px">الإصدار الحالي لا يرسل رسائل واتساب تلقائياً ولا يمتلك صلاحيات التحكم بالجهاز.</div>
 </main>
 <aside class="card side">
@@ -114,6 +114,24 @@ async function send(){
  if(match){await searchWeb(match[1].trim());return;}
  setTimeout(()=>add(reply(q),'bot'),120);
 }
+
+document.getElementById('mic').onclick=()=>{
+ if(window.AndroidVoice){
+  add('🎤 جاري تشغيل الميكروفون...','bot');
+  AndroidVoice.startListening();
+ }else{
+  add('التعرف على الصوت متاح داخل تطبيق أندرويد فقط.','bot');
+ }
+};
+
+window.onSpeechStatus=(msg)=>add(msg,'bot');
+window.onSpeechError=(msg)=>add('⚠️ '+msg,'bot');
+window.onSpeechResult=(text)=>{
+ input.value=text;
+ add('سمعتك: '+text,'bot');
+ send();
+};
+
 document.getElementById('send').onclick=send;input.addEventListener('keydown',e=>{if(e.key==='Enter')send()});
 document.getElementById('help').onclick=()=>add(help(),'bot');
 document.getElementById('clear').onclick=()=>{chat.innerHTML='';add('تم مسح سجل المحادثة من الشاشة.','bot')};
