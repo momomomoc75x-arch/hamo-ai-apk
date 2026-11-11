@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#071426">
+<title>Hamo AI</title>
+<style>
+:root{--bg:#06111f;--panel:#0c1d31;--panel2:#102943;--blue:#24a8ff;--cyan:#61d9ff;--txt:#eaf6ff;--muted:#9bb4c9;--line:#1d3b57}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 50% -20%,#123d66 0,transparent 55%),var(--bg);color:var(--txt);font-family:Tahoma,Arial,sans-serif;min-height:100vh}
+.wrap{max-width:980px;margin:auto;padding:18px}.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px}.orb{width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#1b9fff,#74edff);box-shadow:0 0 28px #159fff88;display:grid;place-items:center;color:#031321;font-size:24px;font-weight:bold}
+h1{font-size:24px;margin:0}.sub{color:var(--muted);font-size:12px;margin-top:5px}
+.pill{border:1px solid #23618b;border-radius:99px;padding:7px 12px;color:#8bdcff;font-size:12px}
+.grid{display:grid;grid-template-columns:1fr 270px;gap:14px;margin-top:18px}
+.card{background:linear-gradient(160deg,#0d2137,#091827);border:1px solid var(--line);border-radius:18px;padding:16px;box-shadow:0 12px 40px #0003}
+.chat{height:55vh;min-height:340px;overflow:auto;display:flex;flex-direction:column;gap:12px;padding:4px}
+.msg{max-width:88%;padding:12px 14px;border-radius:15px;line-height:1.7;white-space:pre-wrap}
+.bot{background:#102d48;border:1px solid #1c527a;align-self:flex-start;border-bottom-left-radius:4px}
+.user{background:#075d91;align-self:flex-end;border-bottom-right-radius:4px}
+.row{display:flex;gap:8px;margin-top:12px}.row input{flex:1;min-width:0;background:#061321;color:white;border:1px solid #28506e;border-radius:12px;padding:13px;font-size:15px}
+button{background:linear-gradient(135deg,#087dc5,#19b9e9);color:white;border:0;border-radius:12px;padding:11px 14px;font-weight:bold;cursor:pointer}
+button.secondary{background:#102a41;border:1px solid #28506e;color:#c9eaff}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+h3{font-size:15px;margin:0 0 12px}.muted{color:var(--muted);font-size:12px;line-height:1.7}
+.stat{padding:10px;border-radius:12px;background:#071827;border:1px solid #173c58;margin-top:8px;font-size:13px}
+select{width:100%;padding:10px;border-radius:10px;background:#071827;color:white;border:1px solid #28506e;margin:8px 0}
+footer{text-align:center;color:#6f91aa;font-size:11px;margin:16px}
+@media(max-width:760px){.grid{grid-template-columns:1fr}.chat{height:48vh}.side{order:-1}}
+</style></head>
+<body><div class="wrap">
+<header class="top"><div class="brand"><div class="orb">H</div><div><h1>HAMO AI</h1><div class="sub">Portable Assistant · الإصدار الأول التجريبي</div></div></div><div class="pill">● Hybrid · Offline first</div></header>
+<div class="grid">
+<main class="card">
+<div id="chat" class="chat"><div class="msg bot">أهلاً! أنا حمو 🤖<br>دي النسخة الأولى التجريبية. أقدر أفهم أوامر بسيطة بدون إنترنت، وأحفظ ملاحظاتك داخل ملف ذاكرة قابل للنقل.<br><br>جرّب: «ساعدني» أو «افتح واتساب» أو «احفظ ملاحظة ...»</div></div>
+<div class="row"><input id="prompt" placeholder="اكتب أمرك لحمو هنا..." autocomplete="off"><button id="send">إرسال</button></div>
+<div class="muted" style="margin-top:8px">الإصدار الحالي لا يرسل رسائل واتساب تلقائياً ولا يمتلك صلاحيات التحكم بالجهاز.</div>
+</main>
+<aside class="card side">
+<h3>لوحة التحكم</h3>
+<label class="muted">وضع التشغيل</label>
+<select id="mode"><option value="hybrid">Hybrid – محلي + إنترنت لاحقاً</option><option value="offline">Offline – محلي</option></select>
+<div class="stat">الحالة: <b style="color:#61d9ff">جاهز محلياً</b></div>
+<div class="stat">الذاكرة المحفوظة: <b id="count">0</b> ملاحظة</div>
+<div class="actions">
+<button class="secondary" id="export">تصدير الذاكرة</button>
+<button class="secondary" id="import">استيراد الذاكرة</button>
+<button class="secondary" id="clear">مسح المحادثة</button>
+<button class="secondary" id="help">المساعدة</button>
+</div>
+<input type="file" id="file" accept="application/json" hidden>
+<p class="muted">نصيحة: استخدم «تصدير الذاكرة» واحفظ ملف JSON على الفلاشة داخل مجلد DATA للحفاظ على ملاحظاتك عند الانتقال بين الأجهزة.</p>
+<h3 style="margin-top:18px">أوامر تجريبية</h3>
+<div class="muted">• ساعدني<br>• الوقت كام؟<br>• احفظ ملاحظة موعد الطبيب<br>• اعرض ملاحظاتي<br>• افتح واتساب</div>
+</aside></div>
+<footer>HAMO AI Portable v1 · واجهة تجريبية تعمل محلياً · لا تضع كلمات مرور أو بيانات حساسة هنا</footer></div>
+<script>
+const chat=document.getElementById('chat'),input=document.getElementById('prompt'),count=document.getElementById('count');
+let notes=[];
+function add(text,who){let d=document.createElement('div');d.className='msg '+who;d.textContent=text;chat.appendChild(d);chat.scrollTop=chat.scrollHeight}
+function help(){return 'الأوامر المتاحة حالياً:\\n1) ساعدني\\n2) الوقت كام؟\\n3) احفظ ملاحظة ثم اكتب النص\\n4) اعرض ملاحظاتي\\n5) افتح واتساب: يفتح رابط واتساب/المحادثة فقط، ولا يرسل الرسالة تلقائياً.'}
+function reply(q){
+ let s=q.trim(),l=s.toLowerCase();
+ if(!s)return 'اكتب أمراً أولاً.';
+ if(l.includes('ساعد')||l==='help')return help();
+ if(l.includes('الوقت')||l.includes('الساعة'))return 'الوقت على هذا الجهاز: '+new Date().toLocaleString('ar-EG');
+ if(s.startsWith('احفظ ملاحظة')||s.startsWith('احفظ ملاحظه')){
+  let n=s.replace(/^احفظ ملاحظة|^احفظ ملاحظه/,'').trim();
+  if(!n)return 'اكتب نص الملاحظة بعد عبارة «احفظ ملاحظة».';
+  notes.push({text:n,created:new Date().toISOString()});count.textContent=notes.length;return 'حفظت الملاحظة في ذاكرة هذه الجلسة. صدّر الذاكرة إلى الفلاشة للاحتفاظ بها.';
+ }
+ if(s.includes('ملاحظاتي')||s.includes('اعرض الملاحظات'))return notes.length?notes.map((n,i)=>(i+1)+') '+n.text).join('\\n'):'لا توجد ملاحظات محفوظة حالياً.';
+ if(s.includes('واتساب')){window.open('https://wa.me/','_blank');return 'فتحت واتساب/واتساب ويب إن كان متاحاً. هذه النسخة لا ترسل رسائل تلقائياً.';}
+ if(s.includes('سلام')||s.includes('اهلا')||s.includes('أهلا'))return 'أهلاً بيك يا معلم! أنا حمو، ولسه بتعلّم. جرّب «ساعدني».';
+ return 'فهمت إنك قلت: «'+s+'»؛ لكن هذا الإصدار لا يحتوي بعد على نموذج لغوي كامل. جرّب «ساعدني» للأوامر المتاحة.';
+}
+function send(){let q=input.value.trim();if(!q)return;add(q,'user');input.value='';setTimeout(()=>add(reply(q),'bot'),120)}
+document.getElementById('send').onclick=send;input.addEventListener('keydown',e=>{if(e.key==='Enter')send()});
+document.getElementById('help').onclick=()=>add(help(),'bot');
+document.getElementById('clear').onclick=()=>{chat.innerHTML='';add('تم مسح سجل المحادثة من الشاشة.','bot')};
+document.getElementById('export').onclick=()=>{let blob=new Blob([JSON.stringify({app:'Hamo AI',version:1,notes},null,2)],{type:'application/json'});let a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='hamo-memory.json';a.click();URL.revokeObjectURL(a.href)};
+document.getElementById('import').onclick=()=>document.getElementById('file').click();
+document.getElementById('file').onchange=async e=>{try{let x=JSON.parse(await e.target.files[0].text());if(!Array.isArray(x.notes))throw 0;notes=x.notes;count.textContent=notes.length;add('تم استيراد '+notes.length+' ملاحظة.','bot')}catch{add('تعذر قراءة الملف. اختر ملف hamo-memory.json صحيحاً.','bot')}};
+</script></body></html>
