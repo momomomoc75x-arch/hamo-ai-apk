@@ -74,6 +74,36 @@ function reply(q){
  return 'فهمت إنك قلت: «'+s+'»؛ لكن هذا الإصدار لا يحتوي بعد على نموذج لغوي كامل. جرّب «ساعدني» للأوامر المتاحة.';
 }
 
+async function callLocalOllama(prompt){
+  const payload={message:prompt,model:'qwen2.5:7b'};
+  const endpoints=['http://127.0.0.1:3000/chat','http://localhost:3000/chat','http://10.0.2.2:3000/chat'];
+  let lastError=null;
+  for (const url of endpoints) {
+    try {
+      const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      if (!res.ok) throw new Error('HTTP '+res.status);
+      const data = await res.json();
+      const text = data.reply || data.response || data.message || data.answer;
+      if (text) return text.trim();
+      throw new Error('empty payload');
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  throw lastError || new Error('no provider');
+}
+async function generateAssistantReply(q){
+  const mode = document.getElementById('mode').value;
+  const fallbackText = reply(q);
+  if (mode === 'offline' || mode === 'hybrid') {
+    try {
+      return await callLocalOllama(q);
+    } catch (error) {
+      return fallbackText;
+    }
+  }
+  return fallbackText;
+}
 async function searchWeb(query){
  add('🔎 جاري البحث عن: '+query,'bot');
  try{
@@ -112,7 +142,7 @@ async function send(){
  input.value='';
  const match=q.match(/^ابحث(?: لي)?(?: عن)?\s+(.+)/);
  if(match){await searchWeb(match[1].trim());return;}
- setTimeout(()=>add(reply(q),'bot'),120);
+ setTimeout(async ()=>{try{add(await generateAssistantReply(q),'bot')}catch{add(reply(q),'bot')}},120);
 }
 document.getElementById('send').onclick=send;input.addEventListener('keydown',e=>{if(e.key==='Enter')send()});
 document.getElementById('help').onclick=()=>add(help(),'bot');
@@ -120,4 +150,20 @@ document.getElementById('clear').onclick=()=>{chat.innerHTML='';add('تم مسح
 document.getElementById('export').onclick=()=>{let blob=new Blob([JSON.stringify({app:'Hamo AI',version:1,notes},null,2)],{type:'application/json'});let a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='hamo-memory.json';a.click();URL.revokeObjectURL(a.href)};
 document.getElementById('import').onclick=()=>document.getElementById('file').click();
 document.getElementById('file').onchange=async e=>{try{let x=JSON.parse(await e.target.files[0].text());if(!Array.isArray(x.notes))throw 0;notes=x.notes;count.textContent=notes.length;add('تم استيراد '+notes.length+' ملاحظة.','bot')}catch{add('تعذر قراءة الملف. اختر ملف hamo-memory.json صحيحاً.','bot')}};
+
+async function checkLocalProvider(){
+  const statusEl = document.querySelector('.stat b');
+  const endpoints=['http://127.0.0.1:3000/health','http://localhost:3000/health','http://10.0.2.2:3000/health'];
+  for (const url of endpoints) {
+    try {
+      const res = await fetch(url, { method: 'GET' });
+      if (res.ok) {
+        statusEl.textContent = 'متصل محلياً';
+        return;
+      }
+    } catch (error) {}
+  }
+  statusEl.textContent = 'جاهز محلياً';
+}
+checkLocalProvider();
 </script></body></html>

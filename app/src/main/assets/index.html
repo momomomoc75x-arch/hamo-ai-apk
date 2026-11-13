@@ -24,6 +24,7 @@ button.secondary{background:#102a41;border:1px solid #28506e;color:#c9eaff}
 h3{font-size:15px;margin:0 0 12px}.muted{color:var(--muted);font-size:12px;line-height:1.7}
 .stat{padding:10px;border-radius:12px;background:#071827;border:1px solid #173c58;margin-top:8px;font-size:13px}
 select{width:100%;padding:10px;border-radius:10px;background:#071827;color:white;border:1px solid #28506e;margin:8px 0}
+.server-row{display:flex;gap:8px;margin-top:8px}.server-row input{min-width:0;flex:1;background:#061321;color:white;border:1px solid #28506e;border-radius:10px;padding:10px}
 footer{text-align:center;color:#6f91aa;font-size:11px;margin:16px}
 @media(max-width:760px){.grid{grid-template-columns:1fr}.chat{height:48vh}.side{order:-1}}
 </style></head>
@@ -40,6 +41,9 @@ footer{text-align:center;color:#6f91aa;font-size:11px;margin:16px}
 <label class="muted">وضع التشغيل</label>
 <select id="mode"><option value="hybrid">Hybrid – محلي + إنترنت لاحقاً</option><option value="offline">Offline – محلي</option></select>
 <div class="stat">الحالة: <b style="color:#61d9ff">جاهز محلياً</b></div>
+<label class="muted" for="serverUrl">عنوان سيرفر Ollama على الكمبيوتر</label>
+<div class="server-row"><input id="serverUrl" type="url" inputmode="url" placeholder="http://192.168.1.10:3000"><button class="secondary" id="testServer" title="اختبار الاتصال">اختبار</button></div>
+<div class="muted">للمحاكي: اترك العنوان الافتراضي. للهاتف: أدخل IP الكمبيوتر على نفس شبكة Wi-Fi.</div>
 <div class="stat">الذاكرة المحفوظة: <b id="count">0</b> ملاحظة</div>
 <div class="actions">
 <button class="secondary" id="export">تصدير الذاكرة</button>
@@ -55,6 +59,9 @@ footer{text-align:center;color:#6f91aa;font-size:11px;margin:16px}
 <footer>HAMO AI Portable v1 · واجهة تجريبية تعمل محلياً · لا تضع كلمات مرور أو بيانات حساسة هنا</footer></div>
 <script>
 const chat=document.getElementById('chat'),input=document.getElementById('prompt'),count=document.getElementById('count');
+const serverInput=document.getElementById('serverUrl');
+const defaultServerUrl='http://192.168.1.3:3000';
+serverInput.value=localStorage.getItem('hamoServerUrl')||defaultServerUrl;
 let notes=[];
 function add(text,who){let d=document.createElement('div');d.className='msg '+who;d.textContent=text;chat.appendChild(d);chat.scrollTop=chat.scrollHeight}
 function help(){return 'الأوامر المتاحة حالياً:\\n1) ساعدني\\n2) الوقت كام؟\\n3) احفظ ملاحظة ثم اكتب النص\\n4) اعرض ملاحظاتي\\n5) افتح واتساب: يفتح رابط واتساب/المحادثة فقط، ولا يرسل الرسالة تلقائياً.'}
@@ -72,6 +79,33 @@ function reply(q){
  if(s.includes('واتساب')){window.open('https://wa.me/','_blank');return 'فتحت واتساب/واتساب ويب إن كان متاحاً. هذه النسخة لا ترسل رسائل تلقائياً.';}
  if(s.includes('سلام')||s.includes('اهلا')||s.includes('أهلا'))return 'أهلاً بيك يا معلم! أنا حمو، ولسه بتعلّم. جرّب «ساعدني».';
  return 'فهمت إنك قلت: «'+s+'»؛ لكن هذا الإصدار لا يحتوي بعد على نموذج لغوي كامل. جرّب «ساعدني» للأوامر المتاحة.';
+}
+
+function getServerUrl(){
+ const value=serverInput.value.trim().replace(/\/$/,'');
+ if(!value)throw new Error('أدخل عنوان سيرفر الكمبيوتر أولاً.');
+ localStorage.setItem('hamoServerUrl',value);
+ return value;
+}
+async function askHamo(prompt){
+ const response=await fetch(getServerUrl()+'/chat',{
+  method:'POST',headers:{'Content-Type':'application/json'},
+  body:JSON.stringify({message:prompt,model:'qwen2.5:7b'})
+ });
+ const data=await response.json();
+ if(!response.ok)throw new Error(data.error||'تعذر الوصول إلى نموذج Ollama.');
+ return data.reply;
+}
+async function testServer(){
+ const statusEl=document.querySelector('.stat b');
+ statusEl.textContent='جارٍ الاختبار...';
+ try{
+  const response=await fetch(getServerUrl()+'/health');
+  if(!response.ok)throw new Error('استجابة غير سليمة من السيرفر.');
+  statusEl.textContent='السيرفر متصل';
+ }catch(error){
+  statusEl.textContent='تعذر الاتصال';
+ }
 }
 
 async function searchWeb(query){
@@ -115,21 +149,9 @@ async function send(){
 
  const localReply=reply(q);
  if(localReply.includes('لا يحتوي بعد على نموذج لغوي كامل')){
-  try{
-   const response=await fetch('http://127.0.0.1:3000/chat',{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({message:q})
-   });
-   if(!response.ok)throw new Error('Server error');
-   const data=await response.json();
-   add(data.reply,'bot');
-  }catch(e){
-   add('تعذر الاتصال بسيرفر حمو. تأكد أن السيرفر يعمل في Termux.','bot');
-  }
- }else{
-  add(localReply,'bot');
- }
+  try{add(await askHamo(q),'bot');}
+  catch(error){add('تعذر الاتصال بحمو: '+error.message+' تأكد أن Hamo Server يعمل وأن العنوان صحيح.','bot');}
+ }else add(localReply,'bot');
 
 }
 
@@ -151,9 +173,11 @@ window.onSpeechResult=(text)=>{
 };
 
 document.getElementById('send').onclick=send;input.addEventListener('keydown',e=>{if(e.key==='Enter')send()});
+document.getElementById('testServer').onclick=testServer;
 document.getElementById('help').onclick=()=>add(help(),'bot');
 document.getElementById('clear').onclick=()=>{chat.innerHTML='';add('تم مسح سجل المحادثة من الشاشة.','bot')};
 document.getElementById('export').onclick=()=>{let blob=new Blob([JSON.stringify({app:'Hamo AI',version:1,notes},null,2)],{type:'application/json'});let a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='hamo-memory.json';a.click();URL.revokeObjectURL(a.href)};
 document.getElementById('import').onclick=()=>document.getElementById('file').click();
 document.getElementById('file').onchange=async e=>{try{let x=JSON.parse(await e.target.files[0].text());if(!Array.isArray(x.notes))throw 0;notes=x.notes;count.textContent=notes.length;add('تم استيراد '+notes.length+' ملاحظة.','bot')}catch{add('تعذر قراءة الملف. اختر ملف hamo-memory.json صحيحاً.','bot')}};
+testServer();
 </script></body></html>
